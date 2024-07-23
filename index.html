@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MQTT WebSocket Test</title>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        #status {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>MQTT WebSocket Test</h1>
+    <div id="status">Status: Not connected</div>
+    <button onclick="publishMessage()">Publish Message</button>
+    <br><br>
+    <textarea id="messages" rows="10" cols="50" readonly></textarea>
+
+    <script>
+        const brokerUrl = 'ws://broker.emqx.io:8083/mqtt';
+        const topic = 'emqx/c-test9527';
+        let client;
+
+        // Initialize MQTT client
+        function initMQTTClient() {
+            client = mqtt.connect(brokerUrl, {
+                username: 'emqx',
+                password: 'public',
+                reconnectPeriod: 1000,
+                connectTimeout: 30 * 1000
+            });
+
+            client.on('connect', () => {
+                document.getElementById('status').textContent = 'Status: Connected';
+                client.subscribe(topic, (err) => {
+                    if (err) {
+                        console.error('Subscription error:', err);
+                    } else {
+                        console.log('Subscribed to topic:', topic);
+                    }
+                });
+            });
+
+            client.on('message', (topic, message) => {
+                const messageText = `Received '${message.toString()}' from topic '${topic}'\n`;
+                document.getElementById('messages').value += messageText;
+                document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+            });
+
+            client.on('error', (err) => {
+                document.getElementById('status').textContent = 'Status: Error ' + err.message;
+                console.error('MQTT error:', err);
+            });
+        }
+
+        // Publish a test message
+        function publishMessage() {
+            const message = `Test message ${new Date().toISOString()}`;
+            client.publish(topic, message, { qos: 0 }, (err) => {
+                if (err) {
+                    console.error('Publish error:', err);
+                } else {
+                    console.log('Message published:', message);
+                }
+            });
+        }
+
+        // Initialize the MQTT client on page load
+        window.onload = initMQTTClient;
+    </script>
+</body>
+
+</html>
