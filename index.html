@@ -9,22 +9,93 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
+            background-color: #f7f7f7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 300px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
         }
 
         #status {
-            margin-bottom: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .led {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        .led-off {
+            background-color: gray;
+        }
+
+        .led-on {
+            background-color: red;
+        }
+
+        .led-blink {
+            background-color: yellow;
+        }
+
+        button {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        textarea {
+            width: 90%;
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            resize: none;
         }
     </style>
 </head>
 
 <body>
-    <h1>MQTT WebSocket LED Control</h1>
-    <div id="status">Status: Not connected</div>
-    <button onclick="controlLED('ON')">Turn LED ON</button>
-    <button onclick="controlLED('OFF')">Turn LED OFF</button>
-    <br><br>
-    <textarea id="messages" rows="10" cols="50" readonly></textarea>
+    <div class="container">
+        <h1>MQTT WebSocket LED Control</h1>
+        <div id="status">Status: Not connected</div>
+        <div>
+            <button onclick="controlLED('ON')">Turn LED ON</button>
+            <button onclick="controlLED('OFF')">Turn LED OFF</button>
+            <button onclick="controlLED('BLINK')">Blink LED</button>
+        </div>
+        <div id="led" class="led led-off"></div>
+        <textarea id="messages" rows="10" readonly></textarea>
+    </div>
 
     <script>
         const brokerUrl = 'ws://broker.emqx.io:8083/mqtt';
@@ -34,8 +105,8 @@
         // Initialize MQTT client
         function initMQTTClient() {
             client = mqtt.connect(brokerUrl, {
-                username: 'jeremy',
-                password: 'sis123',
+                username: 'emqx',
+                password: 'public',
                 reconnectPeriod: 1000,
                 connectTimeout: 30 * 1000
             });
@@ -55,6 +126,7 @@
                 const messageText = `Received '${message.toString()}' from topic '${topic}'\n`;
                 document.getElementById('messages').value += messageText;
                 document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+                updateLEDStatus(message.toString());
             });
 
             client.on('error', (err) => {
@@ -72,6 +144,18 @@
                     console.log('Message published:', command);
                 }
             });
+        }
+
+        // Update LED status indicator
+        function updateLEDStatus(status) {
+            const ledElement = document.getElementById('led');
+            if (status === 'ON') {
+                ledElement.className = 'led led-on';
+            } else if (status === 'OFF') {
+                ledElement.className = 'led led-off';
+            } else if (status === 'BLINK') {
+                ledElement.className = 'led led-blink';
+            }
         }
 
         // Initialize the MQTT client on page load

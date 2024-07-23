@@ -22,6 +22,8 @@
 #define TIMEOUT 10000L
 #define LED_PIN 21
 
+int blink = 0;
+
 MQTTClient_SSLOptions configureSSLOptions()
 {
     MQTTClient_SSLOptions ssl_opts = MQTTClient_SSLOptions_initializer;
@@ -34,13 +36,20 @@ void controlLED(const char *payload)
 {
     if (strcmp(payload, "ON") == 0)
     {
+        blink = 0;
         digitalWrite(LED_PIN, LOW); // 反转 LED 控制
         printf("LED turned ON\n");
     }
     else if (strcmp(payload, "OFF") == 0)
     {
+        blink = 0;
         digitalWrite(LED_PIN, HIGH); // 反转 LED 控制
         printf("LED turned OFF\n");
+    }
+    else if (strcmp(payload, "BLINK") == 0)
+    {
+        blink = 1;
+        printf("LED set to BLINK mode\n");
     }
     else
     {
@@ -102,7 +111,17 @@ int main(int argc, char *argv[])
     // 无限循环保持程序运行
     while (1)
     {
-        sleep(1);
+        if (blink)
+        {
+            digitalWrite(LED_PIN, LOW);
+            usleep(500000); // 延迟500毫秒
+            digitalWrite(LED_PIN, HIGH);
+            usleep(500000); // 延迟500毫秒
+        }
+        else
+        {
+            sleep(1);
+        }
     }
 
     // 清理和退出
