@@ -1,8 +1,9 @@
-#include "stdlib.h"
-#include "string.h"
-#include "unistd.h"
-#include "wiringPi.h"
-#include "MQTTClient.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <wiringPi.h>
+#include <MQTTClient.h>
 
 // Enable or disable SSL/TLS connection (1 for SSL/TLS, 0 for TCP)
 #define USE_SSL 0
@@ -33,12 +34,12 @@ void controlLED(const char *payload)
 {
     if (strcmp(payload, "ON") == 0)
     {
-        digitalWrite(LED_PIN, HIGH);
+        digitalWrite(LED_PIN, LOW); // 反转 LED 控制
         printf("LED turned ON\n");
     }
     else if (strcmp(payload, "OFF") == 0)
     {
-        digitalWrite(LED_PIN, LOW);
+        digitalWrite(LED_PIN, HIGH); // 反转 LED 控制
         printf("LED turned OFF\n");
     }
     else
@@ -50,7 +51,7 @@ void controlLED(const char *payload)
 int on_message(void *context, char *topicName, int topicLen, MQTTClient_message *message)
 {
     char *payload = (char *)message->payload;
-    printf("Received `%s` from `%s` topic \n", payload, topicName);
+    printf("Received `%s` from `%s` topic\n", payload, topicName);
     controlLED(payload);
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
@@ -62,14 +63,16 @@ int main(int argc, char *argv[])
     int rc;
     MQTTClient client;
 
-    if (wiringPiSetup() == -1)
+    // 初始化 WiringPi，使用 BCM GPIO 编号
+    if (wiringPiSetupGpio() == -1)
     {
-        printf("wiringPi setup failed\n");
+        printf("WiringPi setup failed\n");
         exit(1);
     }
     pinMode(LED_PIN, OUTPUT);
 
-    MQTTClient_create(&client, ADDRESS, CLIENTID, 0, NULL);
+    // 创建 MQTT 客户端
+    MQTTClient_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
     MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
     conn_opts.username = USERNAME;
     conn_opts.password = PASSWORD;
@@ -79,7 +82,10 @@ int main(int argc, char *argv[])
     conn_opts.ssl = &ssl_opts;
 #endif
 
+    // 设置回调函数
     MQTTClient_setCallbacks(client, NULL, NULL, on_message, NULL);
+
+    // 连接到 MQTT 服务器
     if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to connect, return code %d\n", rc);
@@ -89,15 +95,17 @@ int main(int argc, char *argv[])
     {
         printf("Connected to MQTT Broker!\n");
     }
-    // subscribe topic
+
+    // 订阅主题
     MQTTClient_subscribe(client, TOPIC, QOS);
 
-    // Run indefinitely
+    // 无限循环保持程序运行
     while (1)
     {
         sleep(1);
     }
 
+    // 清理和退出
     MQTTClient_unsubscribe(client, TOPIC);
     MQTTClient_disconnect(client, TIMEOUT);
     MQTTClient_destroy(&client);

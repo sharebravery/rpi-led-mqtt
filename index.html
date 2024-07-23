@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MQTT WebSocket Test</title>
+    <title>MQTT WebSocket LED Control</title>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
         body {
@@ -19,9 +19,10 @@
 </head>
 
 <body>
-    <h1>MQTT WebSocket Test</h1>
+    <h1>MQTT WebSocket LED Control</h1>
     <div id="status">Status: Not connected</div>
-    <button onclick="publishMessage()">Publish Message</button>
+    <button onclick="controlLED('ON')">Turn LED ON</button>
+    <button onclick="controlLED('OFF')">Turn LED OFF</button>
     <br><br>
     <textarea id="messages" rows="10" cols="50" readonly></textarea>
 
@@ -33,8 +34,8 @@
         // Initialize MQTT client
         function initMQTTClient() {
             client = mqtt.connect(brokerUrl, {
-                username: 'emqx',
-                password: 'public',
+                username: 'jeremy',
+                password: 'sis123',
                 reconnectPeriod: 1000,
                 connectTimeout: 30 * 1000
             });
@@ -62,14 +63,13 @@
             });
         }
 
-        // Publish a test message
-        function publishMessage() {
-            const message = `Test message ${new Date().toISOString()}`;
-            client.publish(topic, message, { qos: 0 }, (err) => {
+        // Publish a control message
+        function controlLED(command) {
+            client.publish(topic, command, { qos: 0 }, (err) => {
                 if (err) {
                     console.error('Publish error:', err);
                 } else {
-                    console.log('Message published:', message);
+                    console.log('Message published:', command);
                 }
             });
         }
